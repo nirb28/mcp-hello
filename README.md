@@ -158,10 +158,10 @@ Get information about the server capabilities.
 
 ### Available Resources
 
-#### 1. `hello-world`
+#### 1. `file://hello-world`
 A simple hello world message resource.
 
-#### 2. `server-status`
+#### 2. `file://server-status`
 Current server status and available tools/resources.
 
 ## Development

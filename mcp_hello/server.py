@@ -82,7 +82,7 @@ def get_server_info() -> Dict[str, Any]:
     }
 
 
-@mcp.resource("hello-world")
+@mcp.resource("file://hello-world")
 async def hello_world_resource() -> str:
     """
     A simple resource that returns a hello world message.
@@ -93,7 +93,7 @@ async def hello_world_resource() -> str:
     return "Hello, World! This is a resource from the MCP Hello World server."
 
 
-@mcp.resource("server-status")
+@mcp.resource("file://server-status")
 async def server_status_resource() -> Dict[str, Any]:
     """
     A resource that returns the current server status.
@@ -105,7 +105,7 @@ async def server_status_resource() -> Dict[str, Any]:
         "status": "running",
         "uptime": "N/A",
         "tools_available": ["say_hello", "get_server_info"],
-        "resources_available": ["hello-world", "server-status"]
+        "resources_available": ["file://hello-world", "file://server-status"]
     }
 
 
@@ -115,7 +115,7 @@ def main():
         print("Starting Hello World MCP Server...")
         print("Server name: Hello World MCP Server")
         print("Available tools: say_hello, get_server_info")
-        print("Available resources: hello-world, server-status")
+        print("Available resources: file://hello-world, file://server-status")
         print("Press Ctrl+C to stop the server")
 
         # Run the server
