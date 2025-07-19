@@ -1,12 +1,13 @@
 # MCP Hello World Server
 
-A simple Hello World MCP (Model Context Protocol) server built with the FastMCP framework in Python.
+A simple Hello World MCP (Model Context Protocol) server built with the FastMCP framework in Python using HTTP transport.
 
 ## Features
 
 - **Multi-language greetings**: Say hello in 10 different languages
 - **Server information**: Get details about the server capabilities
 - **Resource serving**: Access hello world resources
+- **HTTP transport**: Uses streamable HTTP instead of stdio for better accessibility
 - **FastMCP framework**: Built on the modern FastMCP framework
 - **Type safety**: Uses Pydantic for request/response validation
 - **Testing**: Includes comprehensive test suite
@@ -74,17 +75,20 @@ make docker-clean
 #### Using uv (Development)
 
 ```bash
-# Run the server using uv
+# Run the server using uv (HTTP on port 8000)
 uv run python -m mcp_hello.server
 
 # Or using make
 make run
+
+# Custom host/port using environment variables
+MCP_HOST=localhost MCP_PORT=3000 uv run python -m mcp_hello.server
 ```
 
 #### Using pip installation
 
 ```bash
-# Using the installed script
+# Using the installed script (HTTP on port 8000)
 mcp-hello
 
 # Or running directly
@@ -92,7 +96,17 @@ python -m mcp_hello.server
 
 # Or from the source
 python mcp_hello/server.py
+
+# Custom host/port
+MCP_HOST=localhost MCP_PORT=3000 python -m mcp_hello.server
 ```
+
+#### Accessing the HTTP Server
+
+Once running, the server will be available at:
+- **Default**: `http://0.0.0.0:8000`
+- **Local access**: `http://localhost:8000`
+- **Custom**: Set `MCP_HOST` and `MCP_PORT` environment variables
 
 ### Available Tools
 
@@ -172,15 +186,21 @@ Current server status and available tools/resources.
 mcp-hello/
 ├── mcp_hello/
 │   ├── __init__.py
-│   ├── server.py          # Main MCP server
-│   └── client_example.py  # Example client usage
+│   ├── server.py              # Main MCP server with HTTP transport
+│   ├── client_example.py      # Conceptual client example
+│   └── http_client_example.py # HTTP client example
 ├── tests/
 │   ├── __init__.py
-│   └── test_server.py     # Test suite
-├── pyproject.toml         # Project configuration
-├── requirements.txt       # Dependencies
-├── README.md             # This file
-└── LICENSE               # License file
+│   └── test_server.py         # Test suite
+├── docker-compose.yml         # Docker orchestration
+├── Dockerfile                 # Container configuration
+├── .dockerignore             # Docker ignore file
+├── bootstrap.sh              # Setup script
+├── Makefile                  # Development commands
+├── pyproject.toml            # Project configuration
+├── requirements.txt          # Dependencies
+├── README.md                 # This file
+└── LICENSE                   # License file
 ```
 
 ### Running Tests
@@ -248,7 +268,36 @@ ruff check --fix mcp_hello/ tests/
 
 ## Example Client Usage
 
-See `mcp_hello/client_example.py` for a demonstration of how to interact with the server:
+### HTTP Client Example
+
+The project includes an HTTP client example that demonstrates how to interact with the MCP server over HTTP:
+
+#### Using uv (Recommended)
+
+```bash
+# First, start the server in one terminal
+uv run python -m mcp_hello.server
+
+# Then in another terminal, run the HTTP client example
+uv run python mcp_hello/http_client_example.py
+
+# Or using make
+make client
+```
+
+#### Using pip installation
+
+```bash
+# First, start the server
+python -m mcp_hello.server
+
+# Then run the HTTP client example
+python mcp_hello/http_client_example.py
+```
+
+### Original Client Example
+
+See `mcp_hello/client_example.py` for a conceptual demonstration of MCP interactions:
 
 #### Using uv (Recommended)
 
@@ -267,10 +316,23 @@ python mcp_hello/client_example.py
 The project uses `pyproject.toml` for configuration:
 
 - **Build system**: Hatchling
-- **Dependencies**: FastMCP and Pydantic
+- **Dependencies**: FastMCP, Pydantic, and aiohttp
 - **Development tools**: pytest, black, ruff (configured for uv)
 - **Entry point**: `mcp-hello` command
 - **Virtual environment**: Managed by uv
+- **Transport**: HTTP (streamable) instead of stdio
+
+### Environment Variables
+
+The server supports the following environment variables:
+
+- `MCP_HOST`: Server host address (default: `0.0.0.0`)
+- `MCP_PORT`: Server port number (default: `8000`)
+
+Example:
+```bash
+MCP_HOST=localhost MCP_PORT=3000 uv run python -m mcp_hello.server
+```
 
 ### Make Commands
 
@@ -285,7 +347,8 @@ make install-dev # Install with development dependencies
 make test        # Run tests
 make format      # Format code
 make lint        # Lint code
-make run         # Run the server
+make run         # Run the server (HTTP)
+make client      # Run HTTP client example
 make clean       # Clean build artifacts and venv
 make help        # Show all available commands
 ```
@@ -320,6 +383,7 @@ The project includes comprehensive Docker support:
 - **Core dependencies**:
   - `fastmcp>=0.1.0` - FastMCP framework for building MCP servers
   - `pydantic>=2.0.0` - Data validation and settings management
+  - `aiohttp>=3.8.0` - HTTP client for examples and testing
 
 ### For Docker Deployment
 

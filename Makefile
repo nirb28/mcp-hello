@@ -15,7 +15,8 @@ help:
 	@echo "  format      - Format code with black"
 	@echo "  lint        - Lint code with ruff"
 	@echo "  clean       - Clean build artifacts and venv"
-	@echo "  run         - Run the MCP server"
+	@echo "  run         - Run the MCP server (HTTP)"
+	@echo "  client      - Run HTTP client example"
 	@echo ""
 	@echo "Docker operations:"
 	@echo "  docker-build - Build Docker image"
@@ -69,9 +70,13 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 
-# Run the server
+# Run the server (HTTP)
 run:
 	uv run python -m mcp_hello.server
+
+# Run HTTP client example
+client:
+	uv run python mcp_hello/http_client_example.py
 
 # Install from requirements.txt (legacy, prefer uv sync)
 install-req:

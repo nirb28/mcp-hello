@@ -1,20 +1,22 @@
 """
-A simple Hello World MCP server using FastMCP framework.
+A simple Hello World MCP server using FastMCP framework with HTTP transport.
 
 This server demonstrates basic MCP functionality with:
 - A simple greeting tool
 - Resource serving
+- HTTP streaming transport (instead of stdio)
 - Basic server setup
 """
 
 import asyncio
+import os
 from typing import Any, Dict
 
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
 
-# Create the FastMCP server
+# Create the FastMCP server with HTTP transport
 mcp = FastMCP("Hello World MCP Server")
 
 
@@ -111,15 +113,22 @@ async def server_status_resource() -> Dict[str, Any]:
 
 def main():
     """Main entry point for the MCP server"""
+    # Configuration
+    host = os.getenv("MCP_HOST", "0.0.0.0")
+    port = int(os.getenv("MCP_PORT", "8000"))
+
     try:
-        print("Starting Hello World MCP Server...")
-        print("Server name: Hello World MCP Server")
+        print("Starting Hello World MCP Server with HTTP transport...")
+        print(f"Server name: Hello World MCP Server")
+        print(f"Host: {host}")
+        print(f"Port: {port}")
+        print(f"URL: http://{host}:{port}")
         print("Available tools: say_hello, get_server_info")
         print("Available resources: file://hello-world, file://server-status")
         print("Press Ctrl+C to stop the server")
 
-        # Run the server
-        mcp.run()
+        # Run the server with HTTP transport
+        mcp.run(transport="http", host=host, port=port)
 
     except KeyboardInterrupt:
         print("\nServer stopped by user")
