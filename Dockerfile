@@ -18,23 +18,24 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for fast Python package management
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
+# Install uv for fast Python package management and create virtual environment
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    export PATH="/root/.local/bin:$PATH" && \
+    /root/.local/bin/uv --version
+ENV PATH="/root/.local/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml requirements.txt ./
+COPY pyproject.toml requirements.txt uv.lock LICENSE README.md ./
+COPY mcp_hello/ ./mcp_hello/
 
 # Create virtual environment and install dependencies using uv
-RUN uv venv .venv
+RUN /root/.local/bin/uv venv .venv && \
+    /root/.local/bin/uv sync --frozen
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
-
-# Install dependencies
-RUN uv sync --frozen
 
 # Production stage
 FROM ubuntu:24.04 AS production
