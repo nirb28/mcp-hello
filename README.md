@@ -50,7 +50,28 @@ pip install -e ".[dev]"
 
 ### Running the Server
 
-#### Using uv (Recommended)
+#### Using Docker (Recommended for Production)
+
+```bash
+# Build and run with docker-compose
+make docker-build
+make docker-run
+
+# Or manually
+docker build -t mcp-hello:latest .
+docker-compose up -d
+
+# View logs
+make docker-logs
+
+# Stop the container
+make docker-stop
+
+# Clean up (remove container and image)
+make docker-clean
+```
+
+#### Using uv (Development)
 
 ```bash
 # Run the server using uv
@@ -253,7 +274,9 @@ The project uses `pyproject.toml` for configuration:
 
 ### Make Commands
 
-The project includes a Makefile with uv-optimized commands:
+The project includes a Makefile with commands for both local development and Docker:
+
+#### Local Development Commands
 
 ```bash
 make setup-uv    # Install uv if not already installed
@@ -267,7 +290,30 @@ make clean       # Clean build artifacts and venv
 make help        # Show all available commands
 ```
 
+#### Docker Commands
+
+```bash
+make docker-build # Build Docker image
+make docker-run   # Run container with docker-compose
+make docker-stop  # Stop running container
+make docker-clean # Remove container and image
+make docker-logs  # Show container logs
+```
+
+### Docker Configuration
+
+The project includes comprehensive Docker support:
+
+- **Multi-stage build**: Optimized for production with separate build and runtime stages
+- **Ubuntu 24.04 base**: Latest LTS Ubuntu for stability
+- **uv integration**: Fast dependency installation during build
+- **Security**: Non-root user, read-only filesystem, resource limits
+- **Health checks**: Automatic container health monitoring
+- **docker-compose**: Production-ready orchestration with logging and resource management
+
 ## Requirements
+
+### For Local Development
 
 - **Python**: 3.8 or higher
 - **uv**: Fast Python package installer and resolver (recommended)
@@ -275,9 +321,15 @@ make help        # Show all available commands
   - `fastmcp>=0.1.0` - FastMCP framework for building MCP servers
   - `pydantic>=2.0.0` - Data validation and settings management
 
+### For Docker Deployment
+
+- **Docker**: 20.10 or higher
+- **docker-compose**: 2.0 or higher (for orchestration)
+- **Operating System**: Ubuntu 24.04 LTS (container base image)
+
 ## Contributing
 
-#### Using uv (Recommended)
+#### Using uv (Recommended for Local Development)
 
 1. Fork the repository
 2. Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`
@@ -286,7 +338,18 @@ make help        # Show all available commands
 5. Make your changes
 6. Run tests: `make test` or `uv run pytest`
 7. Format code: `make format` or `uv run black .`
-8. Submit a pull request
+8. Test Docker build: `make docker-build`
+9. Submit a pull request
+
+#### Using Docker (Testing Production Build)
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Build and test with Docker: `make docker-build && make docker-run`
+5. Check logs: `make docker-logs`
+6. Stop container: `make docker-stop`
+7. Submit a pull request
 
 #### Using pip (Alternative)
 

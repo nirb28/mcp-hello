@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  mcp-hello:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mcp-hello:latest
+    container_name: mcp-hello-server
+    restart: unless-stopped
+
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+
+    # Port mapping (for future HTTP interface)
+    ports:
+      - "8000:8000"
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import mcp_hello; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Read-only root filesystem for security
+    read_only: true
+
+    # Temporary filesystems for writable directories
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=50m
+      - /var/tmp:rw,noexec,nosuid,size=50m
+
+# Networks
+networks:
+  default:
+    driver: bridge

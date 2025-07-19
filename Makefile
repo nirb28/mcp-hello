@@ -1,10 +1,12 @@
 # Makefile for MCP Hello World Server (using uv)
 
-.PHONY: install install-dev test format lint clean run help setup-uv sync
+.PHONY: install install-dev test format lint clean run help setup-uv sync docker-build docker-run docker-stop docker-clean docker-logs
 
 # Default target
 help:
 	@echo "Available targets:"
+	@echo ""
+	@echo "Local development:"
 	@echo "  setup-uv    - Install uv if not already installed"
 	@echo "  sync        - Create/sync virtual environment with uv"
 	@echo "  install     - Install the package in development mode"
@@ -14,6 +16,14 @@ help:
 	@echo "  lint        - Lint code with ruff"
 	@echo "  clean       - Clean build artifacts and venv"
 	@echo "  run         - Run the MCP server"
+	@echo ""
+	@echo "Docker operations:"
+	@echo "  docker-build - Build Docker image"
+	@echo "  docker-run   - Run container with docker-compose"
+	@echo "  docker-stop  - Stop running container"
+	@echo "  docker-clean - Remove container and image"
+	@echo "  docker-logs  - Show container logs"
+	@echo ""
 	@echo "  help        - Show this help message"
 
 # Install uv if not already installed
@@ -66,3 +76,28 @@ run:
 # Install from requirements.txt (legacy, prefer uv sync)
 install-req:
 	uv pip install -r requirements.txt
+
+# Docker operations
+docker-build:
+	docker build -t mcp-hello:latest .
+
+docker-run:
+	docker-compose up -d
+
+docker-stop:
+	docker-compose down
+
+docker-clean:
+	docker-compose down --rmi all --volumes --remove-orphans
+
+docker-logs:
+	docker-compose logs -f mcp-hello
+
+# Run container directly (without docker-compose)
+docker-run-direct:
+	docker run -d --name mcp-hello-server -p 8000:8000 mcp-hello:latest
+
+# Stop and remove direct container
+docker-stop-direct:
+	docker stop mcp-hello-server || true
+	docker rm mcp-hello-server || true
