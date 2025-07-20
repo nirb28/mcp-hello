@@ -9,11 +9,13 @@ import json
 import aiohttp
 from typing import Dict, Any
 
+base_url = "http://localhost:8000"
+
 
 class MCPHttpClient:
     """Simple HTTP client for MCP server communication."""
 
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: str = base_url):
         self.base_url = base_url.rstrip("/")
         self.session = None
 
@@ -74,8 +76,8 @@ async def demo_client():
     print("=" * 50)
 
     try:
-        async with MCPHttpClient("http://localhost:8000") as client:
-            print("🔗 Connected to MCP server at http://localhost:8000")
+        async with MCPHttpClient(base_url) as client:
+            print("🔗 Connected to MCP server at ", base_url)
             print()
 
             # Test server info (if available)
