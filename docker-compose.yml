@@ -11,6 +11,8 @@ services:
 
     # Environment variables
     environment:
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8000
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
 

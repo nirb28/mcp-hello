@@ -9,7 +9,7 @@ import json
 import aiohttp
 from typing import Dict, Any
 
-base_url = "http://localhost:8000"
+base_url = "http://localhost:8000/mcp/"
 
 
 class MCPHttpClient:
