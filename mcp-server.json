@@ -1,0 +1,105 @@
+{
+  "name": "ai-mcpx.mcp-hello",
+  "description": "A simple Hello World MCP (Model Context Protocol) server built with the FastMCP framework in Python using HTTP transport. Features multi-language greetings, server information, and resource serving.",
+  "repository": {
+    "url": "https://github.com/ai-mcpx/mcp-hello",
+    "source": "github",
+    "id": "ai-mcpx/mcp-hello"
+  },
+  "version_detail": {
+    "version": "1.0.0",
+    "release_date": "2025-07-20T12:00:00Z",
+    "is_latest": true
+  },
+  "packages": [
+    {
+      "registry_name": "pypi",
+      "name": "mcp-hello",
+      "version": "1.0.0",
+      "runtime_hint": "python",
+      "runtime_arguments": [
+        {
+          "type": "named",
+          "name": "--module",
+          "description": "Run as Python module",
+          "format": "string",
+          "is_required": true,
+          "default": "-m",
+          "value_hint": "-m"
+        },
+        {
+          "type": "positional",
+          "name": "module_name",
+          "description": "Module name to run",
+          "format": "string",
+          "is_required": true,
+          "default": "mcp_hello.server",
+          "value_hint": "mcp_hello.server"
+        }
+      ],
+      "environment_variables": [
+        {
+          "name": "MCP_HOST",
+          "description": "Server host address",
+          "format": "string",
+          "is_required": false,
+          "default": "0.0.0.0"
+        },
+        {
+          "name": "MCP_PORT",
+          "description": "Server port number",
+          "format": "number",
+          "is_required": false,
+          "default": "8000"
+        }
+      ]
+    },
+    {
+      "registry_name": "docker",
+      "name": "mcp-hello",
+      "version": "latest",
+      "runtime_hint": "docker",
+      "runtime_arguments": [
+        {
+          "type": "named",
+          "name": "--port",
+          "description": "Port mapping for HTTP server",
+          "format": "string",
+          "is_required": true,
+          "default": "-p",
+          "value_hint": "-p 8000:8000"
+        }
+      ],
+      "environment_variables": [
+        {
+          "name": "MCP_HOST",
+          "description": "Server host address",
+          "format": "string",
+          "is_required": false,
+          "default": "0.0.0.0"
+        },
+        {
+          "name": "MCP_PORT",
+          "description": "Server port number",
+          "format": "number",
+          "is_required": false,
+          "default": "8000"
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "transport_type": "http",
+      "url": "http://localhost:8000",
+      "headers": [
+        {
+          "description": "Content type for JSON requests",
+          "format": "string",
+          "default": "application/json",
+          "value": "Content-Type: application/json"
+        }
+      ]
+    }
+  ]
+}
