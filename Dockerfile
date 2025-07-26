@@ -25,7 +25,7 @@ ENV PATH="/root/.local/bin:$PATH"
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml requirements.txt uv.lock LICENSE README.md ./
+COPY pyproject.toml uv.lock LICENSE README.md ./
 COPY mcp_hello/ ./mcp_hello/
 
 # Create virtual environment
