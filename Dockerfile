@@ -1,6 +1,3 @@
-# Multi-stage Dockerfile for MCP Hello World Server
-# Based on Ubuntu 24.04 with uv for fast dependency management
-
 # Build stage
 FROM ubuntu:24.04 AS builder
 
@@ -18,7 +15,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for fast Python package management and create virtual environment
+# Install uv for virtual environment
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     export PATH="/root/.local/bin:$PATH" && \
     /root/.local/bin/uv --version
@@ -31,7 +28,7 @@ WORKDIR /app
 COPY pyproject.toml requirements.txt uv.lock LICENSE README.md ./
 COPY mcp_hello/ ./mcp_hello/
 
-# Create virtual environment and install dependencies using uv
+# Create virtual environment
 RUN /root/.local/bin/uv venv .venv && \
     /root/.local/bin/uv sync --frozen
 ENV VIRTUAL_ENV=/app/.venv
@@ -73,7 +70,7 @@ RUN chown -R mcpuser:mcpuser /app
 # Switch to non-root user
 USER mcpuser
 
-# Expose port (if needed for future HTTP interface)
+# Expose port
 EXPOSE 8000
 
 # Health check
