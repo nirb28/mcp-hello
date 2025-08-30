@@ -14,34 +14,21 @@ from openai import OpenAI
 
 
 class MCPClient:
-    def __init__(self, provider: str = "groq", model: str = None, api_key: str = None, base_url: str = None):
+    def __init__(self, provider: str = "groq"):
         # Initialize session and client objects
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
         self.provider = provider.lower()
-        self.model = model
         self.tools = []
         self.messages = []
         self.logger = logger
         
         # Initialize OpenAI-compatible client
         self.llm = OpenAI(
-            api_key=api_key or os.getenv(f"{provider.upper()}_API_KEY"),
-            base_url=base_url
+            api_key=os.getenv(f"{provider.upper()}_API_KEY"),
+            base_url=os.getenv(f"{provider.upper()}_BASE_URL")
         )
-        
-        # Set default models and base URLs for different providers
-        if self.provider == "groq":
-            self.model = model or "llama-3.3-70b-versatile"
-            if not base_url:
-                self.llm.base_url = "https://api.groq.com/openai/v1"
-        elif self.provider == "openai":
-            self.model = model or "gpt-4o-mini"
-        else:
-            # Support any OpenAI-compatible provider
-            if not model:
-                raise ValueError(f"Model must be specified for provider: {provider}")
-            self.model = model
+        self.model = model = os.getenv(f"{provider.upper()}_MODEL")
 
     # connect to the MCP server
     async def connect_to_server(self, server_script_path: str):
@@ -163,9 +150,12 @@ class MCPClient:
 
                 # Handle tool calls
                 if message.tool_calls:
+                    # Ensure content is not empty for providers like NVIDIA that require min 1 character
+                    content = message.content if message.content and message.content.strip() else "I'll use the available tools to help you."
+                    
                     assistant_message = {
                         "role": "assistant",
-                        "content": message.content or "",
+                        "content": content,
                         "tool_calls": [{
                             "id": tc.id,
                             "type": "function",

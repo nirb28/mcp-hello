@@ -19,7 +19,7 @@ settings = Settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = MCPClient()
+    client = MCPClient("nvidia") # groq nvidia
     try:
         connected = await client.connect_to_server(settings.server_script_path)
         if not connected:
@@ -94,5 +94,4 @@ async def get_tools():
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)
