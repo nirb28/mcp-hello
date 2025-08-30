@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict, Any, Union
 from contextlib import AsyncExitStack
 import traceback
 
@@ -10,19 +10,38 @@ from utils.logger import logger
 import json
 import os
 
-from anthropic import Anthropic
-from anthropic.types import Message
+from openai import OpenAI
 
 
 class MCPClient:
-    def __init__(self):
+    def __init__(self, provider: str = "groq", model: str = None, api_key: str = None, base_url: str = None):
         # Initialize session and client objects
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
-        self.llm = Anthropic()
+        self.provider = provider.lower()
+        self.model = model
         self.tools = []
         self.messages = []
         self.logger = logger
+        
+        # Initialize OpenAI-compatible client
+        self.llm = OpenAI(
+            api_key=api_key or os.getenv(f"{provider.upper()}_API_KEY"),
+            base_url=base_url
+        )
+        
+        # Set default models and base URLs for different providers
+        if self.provider == "groq":
+            self.model = model or "llama-3.3-70b-versatile"
+            if not base_url:
+                self.llm.base_url = "https://api.groq.com/openai/v1"
+        elif self.provider == "openai":
+            self.model = model or "gpt-4o-mini"
+        else:
+            # Support any OpenAI-compatible provider
+            if not model:
+                raise ValueError(f"Model must be specified for provider: {provider}")
+            self.model = model
 
     # connect to the MCP server
     async def connect_to_server(self, server_script_path: str):
@@ -50,7 +69,7 @@ class MCPClient:
             self.logger.info("Connected to MCP server")
 
             mcp_tools = await self.get_mcp_tools()
-            self.tools = [
+            tool_dicts = [
                 {
                     "name": tool.name,
                     "description": tool.description,
@@ -58,10 +77,10 @@ class MCPClient:
                 }
                 for tool in mcp_tools
             ]
-
-            self.logger.info(
-                f"Available tools: {[tool['name'] for tool in self.tools]}"
-            )
+            self.tools = self._convert_tools_for_openai(tool_dicts)
+            
+            tool_names = [tool['function']['name'] for tool in self.tools]
+            self.logger.info(f"Available tools: {tool_names}")
 
             return True
 
@@ -78,6 +97,48 @@ class MCPClient:
         except Exception as e:
             self.logger.error(f"Error getting MCP tools: {e}")
             raise
+    
+    def _convert_tools_for_openai(self, mcp_tools):
+        """Convert MCP tools to OpenAI function calling format"""
+        openai_tools = []
+        for tool in mcp_tools:
+            openai_tool = {
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool["description"],
+                    "parameters": tool["input_schema"]
+                }
+            }
+            openai_tools.append(openai_tool)
+        return openai_tools
+    
+    def _convert_messages_for_openai(self, messages):
+        """Convert messages to OpenAI format"""
+        openai_messages = []
+        for msg in messages:
+            if isinstance(msg["content"], str):
+                openai_messages.append(msg)
+            elif isinstance(msg["content"], list):
+                # Handle complex content - just convert to text for simplicity
+                text_content = ""
+                for part in msg["content"]:
+                    if isinstance(part, dict):
+                        if part.get("type") == "text":
+                            text_content += part.get("text", "")
+                        elif part.get("type") == "tool_use":
+                            text_content += f"Tool call: {part.get('name', '')} with args {part.get('input', {})}"
+                        else:
+                            text_content += str(part)
+                    else:
+                        text_content += str(part)
+                
+                openai_messages.append({
+                    "role": msg["role"],
+                    "content": text_content
+                })
+        return openai_messages
+    
 
     # process query
     async def process_query(self, query: str):
@@ -88,48 +149,51 @@ class MCPClient:
 
             while True:
                 response = await self.call_llm()
+                message = response.choices[0].message
 
-                # the response is a text message
-                if response.content[0].type == "text" and len(response.content) == 1:
+                # Handle text response
+                if message.content and not message.tool_calls:
                     assistant_message = {
                         "role": "assistant",
-                        "content": response.content[0].text,
+                        "content": message.content,
                     }
                     self.messages.append(assistant_message)
                     await self.log_conversation()
                     break
 
-                # the response is a tool call
-                assistant_message = {
-                    "role": "assistant",
-                    "content": response.to_dict()["content"],
-                }
-                self.messages.append(assistant_message)
-                await self.log_conversation()
+                # Handle tool calls
+                if message.tool_calls:
+                    assistant_message = {
+                        "role": "assistant",
+                        "content": message.content or "",
+                        "tool_calls": [{
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments
+                            }
+                        } for tc in message.tool_calls]
+                    }
+                    self.messages.append(assistant_message)
+                    await self.log_conversation()
 
-                for content in response.content:
-                    if content.type == "tool_use":
-                        tool_name = content.name
-                        tool_args = content.input
-                        tool_use_id = content.id
-                        self.logger.info(
-                            f"Calling tool {tool_name} with args {tool_args}"
-                        )
+                    for tool_call in message.tool_calls:
+                        tool_name = tool_call.function.name
+                        tool_args = json.loads(tool_call.function.arguments)
+                        tool_call_id = tool_call.id
+                        
+                        self.logger.info(f"Calling tool {tool_name} with args {tool_args}")
+                        
                         try:
                             result = await self.session.call_tool(tool_name, tool_args)
                             self.logger.info(f"Tool {tool_name} result: {result}...")
-                            self.messages.append(
-                                {
-                                    "role": "user",
-                                    "content": [
-                                        {
-                                            "type": "tool_result",
-                                            "tool_use_id": tool_use_id,
-                                            "content": result.content,
-                                        }
-                                    ],
-                                }
-                            )
+                            
+                            self.messages.append({
+                                "role": "tool",
+                                "tool_call_id": tool_call_id,
+                                "content": str(result.content),
+                            })
                             await self.log_conversation()
                         except Exception as e:
                             self.logger.error(f"Error calling tool {tool_name}: {e}")
@@ -144,13 +208,20 @@ class MCPClient:
     # call llm
     async def call_llm(self):
         try:
-            self.logger.info("Calling LLM")
-            return self.llm.messages.create(
-                model="claude-3-5-haiku-20241022",
+            self.logger.info(f"Calling {self.provider} LLM")
+            
+            # Convert messages to OpenAI format if needed
+            openai_messages = self._convert_messages_for_openai(self.messages)
+            
+            response = self.llm.chat.completions.create(
+                model=self.model,
                 max_tokens=1000,
-                messages=self.messages,
-                tools=self.tools,
+                messages=openai_messages,
+                tools=self.tools if self.tools else None,
             )
+            
+            return response
+                
         except Exception as e:
             self.logger.error(f"Error calling LLM: {e}")
             raise
