@@ -11,7 +11,7 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
-    server_script_path: str = "/Users/alejandro/repos/code/mcp/documentation/main.py"
+    server_script_path: str = f"D:\ds\work\workspace\git\mcp-hello\mcp_server.py" #mcp_hello/http_client_example.py
 
 
 settings = Settings()
