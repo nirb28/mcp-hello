@@ -11,7 +11,11 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
-    server_script_path: str = f"D:\ds\work\workspace\git\mcp-hello\mcp_server.py" #mcp_hello/http_client_example.py
+    # MCP Server Configuration
+    mcp_server_script_path: str = r"D:\ds\work\workspace\git\mcp-hello\mcp_server.py"
+    mcp_server_protocol: str = "stdio"
+    mcp_server_command: str = "python"
+    mcp_server_timeout: int = 30
 
 
 settings = Settings()
@@ -21,7 +25,7 @@ settings = Settings()
 async def lifespan(app: FastAPI):
     client = MCPClient("nvidia") # groq nvidia
     try:
-        connected = await client.connect_to_server(settings.server_script_path)
+        connected = await client.connect_to_server()
         if not connected:
             raise HTTPException(
                 status_code=500, detail="Failed to connect to MCP server"
@@ -91,7 +95,10 @@ async def get_tools():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
+import os
 if __name__ == "__main__":
     import uvicorn
+    # os.environ["HTTP_PROXY"] = "http://127.0.0.1:8281"
+    # os.environ["HTTPS_PROXY"] = "http://127.0.0.1:8281"
+    # os.environ["REQUESTS_CA_BUNDLE"] = f"D:/temp/RQProxyCA.pem"
     uvicorn.run(app, host="0.0.0.0", port=8000)

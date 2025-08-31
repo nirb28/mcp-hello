@@ -5,13 +5,15 @@ import traceback
 # from utils.logger import logger
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp.client.sse import sse_client
+from mcp.client.streamable_http import streamablehttp_client
 from datetime import datetime
 from utils.logger import logger
 import json
 import os
+import httpx
 
 from openai import OpenAI
-
 
 class MCPClient:
     def __init__(self, provider: str = "groq"):
@@ -23,37 +25,42 @@ class MCPClient:
         self.messages = []
         self.logger = logger
         
+        # MCP Server Configuration
+        self.mcp_server_script_path = os.getenv("MCP_SERVER_SCRIPT_PATH", "mcp_server.py")
+        self.mcp_server_protocol = os.getenv("MCP_SERVER_PROTOCOL", "stdio").lower()
+        self.mcp_server_command = os.getenv("MCP_SERVER_COMMAND", "python")
+        self.mcp_server_timeout = int(os.getenv("MCP_SERVER_TIMEOUT", "30"))
+        
+        # Additional protocol-specific configuration
+        self.mcp_server_url = os.getenv("MCP_SERVER_URL", "http://localhost:8080/mcp")
+        self.mcp_server_headers = json.loads(os.getenv("MCP_SERVER_HEADERS", "{}"))
+        self.mcp_sse_read_timeout = int(os.getenv("MCP_SSE_READ_TIMEOUT", "300"))
+        
         # Initialize OpenAI-compatible client
+        proxy_url = os.environ.get("PROXY_URL")
         self.llm = OpenAI(
             api_key=os.getenv(f"{provider.upper()}_API_KEY"),
-            base_url=os.getenv(f"{provider.upper()}_BASE_URL")
+            base_url=os.getenv(f"{provider.upper()}_BASE_URL"),
+            http_client=httpx.Client(verify=False, proxy=proxy_url)
         )
         self.model = model = os.getenv(f"{provider.upper()}_MODEL")
 
     # connect to the MCP server
-    async def connect_to_server(self, server_script_path: str):
+    async def connect_to_server(self, server_script_path: str = None):
         try:
-            is_python = server_script_path.endswith(".py")
-            is_js = server_script_path.endswith(".js")
-            if not (is_python or is_js):
-                raise ValueError("Server script must be a .py or .js file")
-
-            command = "python" if is_python else "node"
-            server_params = StdioServerParameters(
-                command=command, args=[server_script_path], env=None
-            )
-
-            stdio_transport = await self.exit_stack.enter_async_context(
-                stdio_client(server_params)
-            )
-            self.stdio, self.write = stdio_transport
-            self.session = await self.exit_stack.enter_async_context(
-                ClientSession(self.stdio, self.write)
-            )
+            self.logger.info(f"Connecting to MCP server using {self.mcp_server_protocol} protocol")
+            
+            if self.mcp_server_protocol == "stdio":
+                await self._connect_stdio(server_script_path)
+            elif self.mcp_server_protocol == "sse":
+                await self._connect_sse()
+            elif self.mcp_server_protocol == "http":
+                await self._connect_http()
+            else:
+                raise ValueError(f"Unsupported MCP protocol: {self.mcp_server_protocol}")
 
             await self.session.initialize()
-
-            self.logger.info("Connected to MCP server")
+            self.logger.info(f"Connected to MCP server via {self.mcp_server_protocol}")
 
             mcp_tools = await self.get_mcp_tools()
             tool_dicts = [
@@ -75,6 +82,60 @@ class MCPClient:
             self.logger.error(f"Error connecting to MCP server: {e}")
             traceback.print_exc()
             raise
+
+    async def _connect_stdio(self, server_script_path: str = None):
+        """Connect using stdio protocol"""
+        # Use provided path or fall back to environment configuration
+        script_path = server_script_path or self.mcp_server_script_path
+        
+        is_python = script_path.endswith(".py")
+        is_js = script_path.endswith(".js")
+        if not (is_python or is_js):
+            raise ValueError("Server script must be a .py or .js file")
+
+        # Use environment command or auto-detect based on file extension
+        command = self.mcp_server_command if self.mcp_server_command != "auto" else ("python" if is_python else "node")
+        server_params = StdioServerParameters(
+            command=command, args=[script_path], env=None
+        )
+
+        stdio_transport = await self.exit_stack.enter_async_context(
+            stdio_client(server_params)
+        )
+        self.stdio, self.write = stdio_transport
+        self.session = await self.exit_stack.enter_async_context(
+            ClientSession(self.stdio, self.write)
+        )
+
+    async def _connect_sse(self):
+        """Connect using SSE protocol"""
+        sse_transport = await self.exit_stack.enter_async_context(
+            sse_client(
+                url=self.mcp_server_url,
+                headers=self.mcp_server_headers,
+                timeout=self.mcp_server_timeout,
+                sse_read_timeout=self.mcp_sse_read_timeout
+            )
+        )
+        self.stdio, self.write = sse_transport
+        self.session = await self.exit_stack.enter_async_context(
+            ClientSession(self.stdio, self.write)
+        )
+
+    async def _connect_http(self):
+        """Connect using HTTP protocol"""
+        http_transport = await self.exit_stack.enter_async_context(
+            streamablehttp_client(
+                url=self.mcp_server_url,
+                headers=self.mcp_server_headers,
+                timeout=self.mcp_server_timeout,
+                sse_read_timeout=self.mcp_sse_read_timeout
+            )
+        )
+        self.stdio, self.write, self.get_session_id = http_transport
+        self.session = await self.exit_stack.enter_async_context(
+            ClientSession(self.stdio, self.write)
+        )
 
     # get mcp tool list
     async def get_mcp_tools(self):
