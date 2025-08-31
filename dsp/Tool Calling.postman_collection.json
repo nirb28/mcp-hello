@@ -1,0 +1,75 @@
+{
+	"info": {
+		"_postman_id": "1507f9ad-65c9-411c-9445-68203ddb9c08",
+		"name": "Tool Calling",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "260790",
+		"_collection_link": "https://crimson-flare-101603.postman.co/workspace/My-Workspace~6ebdbd9c-69f2-4617-8c2e-add8e28eb928/collection/260790-1507f9ad-65c9-411c-9445-68203ddb9c08?action=share&source=collection_link&creator=260790"
+	},
+	"item": [
+		{
+			"name": "Initial Call",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"messages\": [\r\n        {\r\n            \"role\": \"user\",\r\n            \"content\": \"say hi to ds\"\r\n        }\r\n    ],\r\n    \"model\": \"meta/llama-3.1-70b-instruct\",\r\n    \"max_tokens\": 1000,\r\n    \"tools\": [\r\n        {\r\n            \"type\": \"function\",\r\n            \"function\": {\r\n                \"name\": \"say_hello\",\r\n                \"description\": \"A simple greeting tool that says hello in different languages.\\n\\nArgs:\\n request: The greeting request with name and language\\n\\nReturns:\\n A greeting message in the specified language\",\r\n                \"parameters\": {\r\n                    \"$defs\": {\r\n                        \"GreetingRequest\": {\r\n                            \"description\": \"Request model for greeting tool\",\r\n                            \"properties\": {\r\n                                \"name\": {\r\n                                    \"default\": \"World\",\r\n                                    \"title\": \"Name\",\r\n                                    \"type\": \"string\"\r\n                                },\r\n                                \"language\": {\r\n                                    \"default\": \"en\",\r\n                                    \"title\": \"Language\",\r\n                                    \"type\": \"string\"\r\n                                }\r\n                            },\r\n                            \"title\": \"GreetingRequest\",\r\n                            \"type\": \"object\"\r\n                        }\r\n                    },\r\n                    \"properties\": {\r\n                        \"request\": {\r\n                            \"$ref\": \"#/$defs/GreetingRequest\",\r\n                            \"title\": \"Request\"\r\n                        }\r\n                    },\r\n                    \"required\": [\r\n                        \"request\"\r\n                    ],\r\n                    \"type\": \"object\"\r\n                }\r\n            }\r\n        },\r\n        {\r\n            \"type\": \"function\",\r\n            \"function\": {\r\n                \"name\": \"get_server_info\",\r\n                \"description\": \"Get information about this MCP server.\\n\\nReturns:\\n Server information including version and capabilities\",\r\n                \"parameters\": {\r\n                    \"properties\": {},\r\n                    \"type\": \"object\"\r\n                }\r\n            }\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://integrate.api.nvidia.com/v1/chat/completions",
+					"protocol": "https",
+					"host": [
+						"integrate",
+						"api",
+						"nvidia",
+						"com"
+					],
+					"path": [
+						"v1",
+						"chat",
+						"completions"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "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",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
