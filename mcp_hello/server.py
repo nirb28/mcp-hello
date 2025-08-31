@@ -115,7 +115,7 @@ def main():
     """Main entry point for the MCP server"""
     # Configuration
     host = os.getenv("MCP_HOST", "0.0.0.0")
-    port = int(os.getenv("MCP_PORT", "8000"))
+    port = int(os.getenv("MCP_PORT", "3000"))
 
     try:
         print("Starting Hello World MCP Server with HTTP transport...")
