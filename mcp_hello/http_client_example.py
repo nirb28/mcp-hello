@@ -10,7 +10,7 @@ import aiohttp
 import uuid
 from typing import Dict, Any
 
-base_url = "http://localhost:8000/mcp/"
+base_url = "http://localhost:3000/mcp/"
 
 
 class MCPHttpClient:
